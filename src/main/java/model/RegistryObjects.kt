@@ -36,7 +36,6 @@ data class Station(
 ) : RegistryObject()
 
 const val DEFAULT_TRADE_LENGTH = 10000L
-val DEFAULT_TRADE_PRICE = Rational(1L)
 
 data class Stock(
     val id: String = UUID.randomUUID().toString(),
@@ -44,7 +43,6 @@ data class Stock(
     val stationId: String,
     val commodityId: String,
     val amount: Long = 0,
-    val defaultPrice: Rational = DEFAULT_TRADE_PRICE,
     val tradeLength: Long = DEFAULT_TRADE_LENGTH
 ) : RegistryObject()
 
@@ -56,7 +54,8 @@ data class Trade(
     val sellCommodityId: String,
     val buyCommodityId: String,
     val sellAmount: Long,
-    val price: Rational,
+    val buyAmount: Long = 0,
+    val price: Double = buyAmount.toDouble() / sellAmount,
     val timestamp: Long = Date().time,
     val tradeLength: Long = 0
 ) : RegistryObject()

@@ -31,6 +31,18 @@ fun readCommand(text: String = ": "): String {
     return readLine() ?: ""
 }
 
+fun startProgram() {
+    Thread(Runnable {
+        println("Program running")
+        while (true) {
+            Thread.sleep(100)
+            runProductionStep()
+            runBusinessStep()
+            runTradeStep()
+        }
+    }).start()
+}
+
 fun setup() {
     val station1 = Station(name = "Station 1")
     val credits = Commodity(
@@ -96,16 +108,4 @@ fun setup() {
     }
 
     println("Setup complete")
-}
-
-fun startProgram() {
-    Thread(Runnable {
-        println("Program running")
-        while (true) {
-            Thread.sleep(1000)
-            runProductionStep()
-            runBusinessStep()
-            runTradeStep()
-        }
-    }).start()
 }

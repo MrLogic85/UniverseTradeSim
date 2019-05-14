@@ -1,6 +1,9 @@
 package controller
 
-import model.*
+import model.Station
+import model.Trade
+import model.isActive
+import model.isClosed
 
 fun runTradeStep() {
     trade()
@@ -9,10 +12,6 @@ fun runTradeStep() {
 
 private fun trade() {
     Registry.stations.forEach { tradeAtStation(it) }
-    Registry.trades.active()
-        .distinctBy { it.stationId }
-        .map { Registry.get<Station>(it.stationId) }
-        .forEach { tradeAtStation(it) }
 }
 
 private fun tradeAtStation(it: Station) {
@@ -34,37 +33,38 @@ private fun trade(
     val selling = trades.selling(sellCommodityId).buying(buyCommodityId).sortedBy { it.price }.toMutableList()
     val buying = trades.selling(buyCommodityId).buying(sellCommodityId).sortedByDescending { it.price }.toMutableList()
 
-    while (buying.isNotEmpty() && selling.isNotEmpty() && buying[0].price >= selling[0].price) {
+    while (buying.isNotEmpty() && selling.isNotEmpty() && 1.0 / buying[0].price >= selling[0].price) {
         var sell = selling[0]
         var buy = buying[0]
         val sellerPrice = sell.price
-        val buyerPrice = 1L / buy.price
+        val buyerPrice = 1.0 / buy.price
 
-        val sellAmount = sell.sellAmount
-        val buyAmount = (buy.sellAmount * buy.price).toLong()
-        val amount = Math.min(sellAmount, buyAmount)
-        val payAmount = (sellerPrice * amount).toLong()
-        val price = payAmount.toDouble() / amount
+        val canSellAmount = sell.sellAmount // Seller can sell this many or less
+        val canPayAmount = buy.sellAmount // This is how many the buyer can pay with
+        val wantToBuyAmount = Math.ceil(buy.sellAmount * buy.price).toLong() // Buyer wants this many or more
+        val amount = Math.min(canSellAmount, wantToBuyAmount) // This is the amount we can work with
+        val maxPayAmount = Math.min(canPayAmount, (buyerPrice * amount).toLong()) // Buyer will pay this many or less
+        val price = maxPayAmount.toDouble() / amount
 
-        if (price >= sellerPrice && price <= buyerPrice) {
+        if (price in sellerPrice..buyerPrice) {
             val trade = Trade(
                 sellingBusinessId = sell.sellingBusinessId,
                 buyingBusinessId = buy.sellingBusinessId,
                 stationId = sell.stationId,
                 sellCommodityId = sellCommodityId,
                 buyCommodityId = buyCommodityId,
-                price = price.toRational(),
-                sellAmount = amount
+                sellAmount = amount,
+                buyAmount = maxPayAmount
             ).also { Registry.add(it) }
 
-            println("Trade, amount ${trade.sellAmount}, price ${trade.price}")
+            println("Trading ${trade.sellAmount} ${trade.sellCommodity.abbrev} for ${trade.buyAmount} ${trade.buyCommodity.abbrev}, price ${trade.price}")
             closeTrade(trade)
 
-            if (buy.sellAmount == payAmount) {
+            if (buy.sellAmount == maxPayAmount) {
                 buying.removeAt(0)
                 Registry.delete(buy)
             } else {
-                buy = buy.copy(sellAmount = buy.sellAmount - payAmount)
+                buy = buy.copy(sellAmount = buy.sellAmount - maxPayAmount)
                 buying[0] = buy
                 Registry.update(buy)
             }
@@ -77,6 +77,10 @@ private fun trade(
                 selling[0] = sell
                 Registry.update(sell)
             }
+        } else if (canSellAmount < wantToBuyAmount) {
+            selling.removeAt(0)
+        } else {
+            buying.removeAt(0)
         }
     }
 }
@@ -90,11 +94,8 @@ private fun closeTrade(trade: Trade) {
     val buyerToStock =
         trade.buyingBusiness?.buyStock ?: throw IllegalStateException("Tried to close trade with no buyer stocks")
 
-    val sellAmount = trade.sellAmount
-    val buyAmount = (trade.sellAmount * trade.price).toLong()
-
-    Registry.update(buyerToStock.copy(amount = buyerToStock.amount + sellAmount))
-    Registry.update(sellerToStock.copy(amount = sellerToStock.amount + buyAmount))
+    Registry.update(buyerToStock.copy(amount = buyerToStock.amount + trade.sellAmount))
+    Registry.update(sellerToStock.copy(amount = sellerToStock.amount + trade.buyAmount))
 }
 
 private fun timeoutTrades() {
