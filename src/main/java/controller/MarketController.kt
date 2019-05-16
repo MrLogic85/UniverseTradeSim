@@ -15,7 +15,7 @@ private fun trade() {
 }
 
 private fun tradeAtStation(it: Station) {
-    val localTrades = Registry.trades.active().atStation(it.id)
+    val localTrades = Registry.activeTrades.atStation(it.id)
     val sellingCommodities = localTrades.map { it.sellCommodityId }.distinct()
     val buyingCommodities = localTrades.map { it.buyCommodityId }.distinct()
     sellingCommodities.forEach { sellCommodity ->
@@ -26,7 +26,7 @@ private fun tradeAtStation(it: Station) {
 }
 
 private fun trade(
-    trades: Sequence<Trade>,
+    trades: List<Trade>,
     sellCommodityId: String,
     buyCommodityId: String
 ) {
@@ -57,7 +57,7 @@ private fun trade(
                 buyAmount = maxPayAmount
             ).also { Registry.add(it) }
 
-            println("Trading ${trade.sellAmount} ${trade.sellCommodity.abbrev} for ${trade.buyAmount} ${trade.buyCommodity.abbrev}, price ${trade.price}")
+            //println("Trading ${trade.sellAmount} ${trade.sellCommodity.abbrev} for ${trade.buyAmount} ${trade.buyCommodity.abbrev}, price ${trade.price}")
             closeTrade(trade)
 
             if (buy.sellAmount == maxPayAmount) {
@@ -99,8 +99,7 @@ private fun closeTrade(trade: Trade) {
 }
 
 private fun timeoutTrades() {
-    Registry.trades
-        .active()
+    Registry.activeTrades
         .timedOut()
         .forEach(::timeoutTrade)
 }

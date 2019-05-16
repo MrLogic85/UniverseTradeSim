@@ -3,21 +3,22 @@ package controller
 import model.*
 
 object Registry {
-    private var commodityMap = mapOf<String, Commodity>()
-    private var entityMap = mapOf<String, Entity>()
-    private var businessMap = mapOf<String, Business>()
-    private var productionUnitMap = mapOf<String, ProductionUnit>()
-    private var stationMap = mapOf<String, Station>()
-    private var stockMap = mapOf<String, Stock>()
-    private var tradeMap = mapOf<String, Trade>()
+    private val commodityMap = mutableMapOf<String, Commodity>()
+    private val entityMap = mutableMapOf<String, Entity>()
+    private val businessMap = mutableMapOf<String, Business>()
+    private val productionUnitMap = mutableMapOf<String, ProductionUnit>()
+    private val stationMap = mutableMapOf<String, Station>()
+    private val stockMap = mutableMapOf<String, Stock>()
+    private val tradeMap = mutableMapOf<String, Trade>()
 
-    val commodities get() = commodityMap.values.asSequence()
-    val entities get() = entityMap.values.asSequence()
-    val businesses get() = businessMap.values.asSequence()
-    val productionUnits get() = productionUnitMap.values.asSequence()
-    val stations get() = stationMap.values.asSequence()
-    val stockpile = stockMap.values.asSequence()
-    val trades get() = tradeMap.values.asSequence()
+    val commodities: Collection<Commodity> get() = commodityMap.values
+    val entities: Collection<Entity> get() = entityMap.values
+    val businesses: Collection<Business> get() = businessMap.values
+    val productionUnits: Collection<ProductionUnit> get() = productionUnitMap.values
+    val stations: Collection<Station> get() = stationMap.values
+    val stockpile: Collection<Stock> = stockMap.values
+    val activeTrades: List<Trade> get() = tradeMap.asSequence().map { it.value }.filter { it.isActive }.toList()
+    val closedTrades: List<Trade> get() = tradeMap.asSequence().map { it.value }.filter { it.isClosed }.toList()
 
     fun addAll(vararg obj: RegistryObject) {
         obj.forEach(::add)
@@ -29,25 +30,25 @@ object Registry {
 
     fun <T : RegistryObject> update(t: T) {
         when (t) {
-            is Commodity -> commodityMap = commodityMap + (t.id to t as Commodity)
-            is Entity -> entityMap = entityMap + (t.id to t as Entity)
-            is Business -> businessMap = businessMap + (t.id to t as Business)
-            is ProductionUnit -> productionUnitMap = productionUnitMap + (t.id to t as ProductionUnit)
-            is Station -> stationMap = stationMap + (t.id to t as Station)
-            is Stock -> stockMap = stockMap + (t.id to t as Stock)
-            is Trade -> tradeMap = tradeMap + (t.id to t as Trade)
+            is Commodity -> commodityMap[t.id] = t as Commodity
+            is Entity -> entityMap[t.id] = t as Entity
+            is Business -> businessMap[t.id] = t as Business
+            is ProductionUnit -> productionUnitMap[t.id] = t as ProductionUnit
+            is Station -> stationMap[t.id] = t as Station
+            is Stock -> stockMap[t.id] = t as Stock
+            is Trade -> tradeMap[t.id] = t as Trade
         }
     }
 
     fun <T : RegistryObject> delete(t: T) {
         when (t) {
-            is Commodity -> commodityMap = commodityMap - t.id
-            is Entity -> entityMap = entityMap - t.id
-            is Business -> businessMap = businessMap - t.id
-            is ProductionUnit -> productionUnitMap = productionUnitMap - t.id
-            is Station -> stationMap = stationMap - t.id
-            is Stock -> stockMap = stockMap - t.id
-            is Trade -> tradeMap = tradeMap - t.id
+            is Commodity -> commodityMap.remove(t.id)
+            is Entity -> entityMap.remove(t.id)
+            is Business -> businessMap.remove(t.id)
+            is ProductionUnit -> productionUnitMap.remove(t.id)
+            is Station -> stationMap.remove(t.id)
+            is Stock -> stockMap.remove(t.id)
+            is Trade -> tradeMap.remove(t.id)
         }
     }
 
@@ -71,19 +72,18 @@ object Registry {
     }
 }
 
-fun <T : RegistryObject> Sequence<T>.update(function: (T) -> T) {
+fun <T : RegistryObject> Collection<T>.update(function: (T) -> T) {
     forEach { Registry.update(function(it)) }
 }
 
-fun Sequence<Stock>.withCommodity(id: String): Sequence<Stock> = filter { it.commodityId == id }
+fun Iterable<Stock>.withCommodity(id: String): Collection<Stock> = filter { it.commodityId == id }
 
-fun Sequence<Trade>.active(): Sequence<Trade> = filter { it.isActive }
-fun Sequence<Trade>.selling(id: String): Sequence<Trade> = filter { it.sellCommodityId == id }
-fun Sequence<Trade>.buying(id: String): Sequence<Trade> = filter { it.buyCommodityId == id }
-fun Sequence<Trade>.atStation(id: String): Sequence<Trade> = filter { it.stationId == id }
-fun Sequence<Trade>.timedOut(): Sequence<Trade> = filter { it.timestamp + it.tradeLength < System.currentTimeMillis() }
+fun Iterable<Trade>.selling(id: String): List<Trade> = filter { it.sellCommodityId == id }
+fun Iterable<Trade>.buying(id: String): List<Trade> = filter { it.buyCommodityId == id }
+fun Iterable<Trade>.atStation(id: String): List<Trade> = filter { it.stationId == id }
+fun Iterable<Trade>.timedOut(): List<Trade> = filter { it.timestamp + it.tradeLength < System.currentTimeMillis() }
 
-val Business.sellStocks: Sequence<Stock> get() = sellStockIds.asSequence().map { Registry.getStock(it) }
+val Business.sellStocks: List<Stock> get() = sellStockIds.map { Registry.getStock(it) }
 val Business.buyStock: Stock get() = Registry[buyStockId]
 
 val Stock.commodity: Commodity get() = Registry[commodityId]

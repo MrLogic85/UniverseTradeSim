@@ -10,7 +10,7 @@ fun runBusinessStep() {
         business.sellStockIds.map { Registry.get<Stock>(it) }.forEach { sellStock ->
             if (sellStock.amount != 0L) {
                 val price = getRecommendedSellPrice(business, sellStock)
-                println("Selling ${sellStock.commodity.abbrev} for ${business.buyStock.commodity.abbrev}, amount ${sellStock.amount}, price $price")
+                //println("Selling ${sellStock.commodity.abbrev} for ${business.buyStock.commodity.abbrev}, amount ${sellStock.amount}, price $price")
                 if (sellStock.amount * price >= 1.0) {
                     Registry.add(
                         Trade(
@@ -31,8 +31,7 @@ fun runBusinessStep() {
 }
 
 private fun getRecommendedSellPrice(business: Business, sellStock: Stock): Double {
-    val trades = Registry.trades
-        .active()
+    val trades = Registry.activeTrades
         .selling(sellStock.commodityId)
         .buying(business.buyStock.commodityId)
         .atStation(sellStock.stationId)
@@ -48,8 +47,7 @@ private fun getRecommendedSellPrice(business: Business, sellStock: Stock): Doubl
 }
 
 fun getRecommendedSellPriceFromBuyers(business: Business, sellStock: Stock): Double? {
-    val trades = Registry.trades
-        .active()
+    val trades = Registry.activeTrades
         .selling(business.buyStock.commodityId)
         .buying(sellStock.commodityId)
         .atStation(sellStock.stationId)
