@@ -3,14 +3,14 @@ package com.sleepyduckstudio
 import com.sleepyduckstudio.controller.Registry
 import com.sleepyduckstudio.model.*
 
-fun setupExampleWorld() {
+fun setupExampleWorld(registry: Registry) {
     val station1 = Station(name = "Station 1")
     val credits = Commodity(
         name = "Credits",
         abbrev = "Cr"
     )
     val water = Commodity(name = "Water")
-    Registry.addAll(station1, credits, water)
+    registry.addAll(station1, credits, water)
 
     Entity(
         currencyId = credits.id,
@@ -36,7 +36,7 @@ fun setupExampleWorld() {
             buyStockId = creditStock.id,
             sellStockIds = listOf(waterStock.id)
         )
-        Registry.addAll(entity, creditStock, waterProduction, waterStock, waterBusiness)
+        registry.addAll(entity, creditStock, waterProduction, waterStock, waterBusiness)
     }
 
     Entity(
@@ -64,6 +64,6 @@ fun setupExampleWorld() {
             buyStockId = waterStock.id,
             sellStockIds = listOf(creditStock.id)
         )
-        Registry.addAll(entity, creditStock, creditsProduction, waterStock, waterBusiness)
+        registry.addAll(entity, creditStock, creditsProduction, waterStock, waterBusiness)
     }
 }

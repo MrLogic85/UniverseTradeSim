@@ -11,11 +11,11 @@ fun runTradeStep() {
 }
 
 private fun trade() {
-    Registry.stations.forEach { tradeAtStation(it) }
+    registry.stations().forEach { tradeAtStation(it) }
 }
 
 private fun tradeAtStation(it: Station) {
-    val localTrades = Registry.activeTrades.atStation(it.id)
+    val localTrades = registry.trades(isActive(), atStation(it.id))
     val sellingCommodities = localTrades.map { it.sellCommodityId }.distinct()
     val buyingCommodities = localTrades.map { it.buyCommodityId }.distinct()
     sellingCommodities.forEach { sellCommodity ->
@@ -30,8 +30,13 @@ private fun trade(
     sellCommodityId: String,
     buyCommodityId: String
 ) {
-    val selling = trades.selling(sellCommodityId).buying(buyCommodityId).sortedBy { it.price }.toMutableList()
-    val buying = trades.selling(buyCommodityId).buying(sellCommodityId).sortedByDescending { it.price }.toMutableList()
+    val selling = trades.filter(isSelling(sellCommodityId), isBuying(buyCommodityId))
+        .sortedBy { it.price }
+        .toMutableList()
+
+    val buying = trades.filter(isSelling(buyCommodityId), isBuying(sellCommodityId))
+        .sortedByDescending { it.price }
+        .toMutableList()
 
     while (buying.isNotEmpty() && selling.isNotEmpty() && 1.0 / buying[0].price >= selling[0].price) {
         var sell = selling[0]
@@ -55,27 +60,27 @@ private fun trade(
                 buyCommodityId = buyCommodityId,
                 sellAmount = amount,
                 buyAmount = maxPayAmount
-            ).also { Registry.add(it) }
+            ).also { registry.add(it) }
 
             //println("Trading ${trade.sellAmount} ${trade.sellCommodity.abbrev} for ${trade.buyAmount} ${trade.buyCommodity.abbrev}, price ${trade.price}")
             closeTrade(trade)
 
             if (buy.sellAmount == maxPayAmount) {
                 buying.removeAt(0)
-                Registry.delete(buy)
+                registry.delete(buy)
             } else {
                 buy = buy.copy(sellAmount = buy.sellAmount - maxPayAmount)
                 buying[0] = buy
-                Registry.update(buy)
+                buy.update()
             }
 
             if (sell.sellAmount == amount) {
                 selling.removeAt(0)
-                Registry.delete(sell)
+                registry.delete(sell)
             } else {
                 sell = sell.copy(sellAmount = sell.sellAmount - amount)
                 selling[0] = sell
-                Registry.update(sell)
+                sell.update()
             }
         } else if (canSellAmount < wantToBuyAmount) {
             selling.removeAt(0)
@@ -94,14 +99,12 @@ private fun closeTrade(trade: Trade) {
     val buyerToStock =
         trade.buyingBusiness?.buyStock ?: throw IllegalStateException("Tried to close trade with no buyer stocks")
 
-    Registry.update(buyerToStock.copy(amount = buyerToStock.amount + trade.sellAmount))
-    Registry.update(sellerToStock.copy(amount = sellerToStock.amount + trade.buyAmount))
+    buyerToStock.copy(amount = buyerToStock.amount + trade.sellAmount).update()
+    sellerToStock.copy(amount = sellerToStock.amount + trade.buyAmount).update()
 }
 
 private fun timeoutTrades() {
-    Registry.activeTrades
-        .timedOut()
-        .forEach(::timeoutTrade)
+    registry.trades(isActive(), isTimedOut()).forEach(::timeoutTrade)
 }
 
 private fun timeoutTrade(trade: Trade) {
@@ -111,7 +114,7 @@ private fun timeoutTrade(trade: Trade) {
     }
 
     val amount = trade.sellAmount
-    val stock = trade.sellingBusiness.sellStocks.withCommodity(trade.sellCommodityId).first()
-    Registry.update(stock.copy(amount = stock.amount + amount))
-    Registry.delete(trade)
+    val stock = trade.sellingBusiness.sellStocks.first { it.commodityId == trade.sellCommodityId }
+    stock.copy(amount = stock.amount + amount).update()
+    registry.delete(trade)
 }

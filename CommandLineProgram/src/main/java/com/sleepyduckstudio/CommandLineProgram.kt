@@ -25,6 +25,11 @@ fun readCommand(text: String = ": "): String {
 class CommandLineProgram : CommandParser() {
     private var running = false
     private val gson = GsonBuilder().setPrettyPrinting().create()
+    private val registry = RegistryDataStore()
+
+    init {
+        Registry.setImplementation(registry)
+    }
 
     override fun start() {
         if (running) {
@@ -53,17 +58,17 @@ class CommandLineProgram : CommandParser() {
     }
 
     override fun init() {
-        setupExampleWorld()
+        setupExampleWorld(registry)
         println("World initialized, only do this once!")
     }
 
     override fun listStations() {
         println("Stations:")
-        println(gson.toJson(Registry.stations))
+        println(gson.toJson(registry.stations()))
     }
 
     override fun addStation(station: Station) {
-        Registry.add(station)
+        registry.add(station)
         println("Added station")
         println(gson.toJson(station))
     }
