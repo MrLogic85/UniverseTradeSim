@@ -2,6 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/CommandLineProgram/CommandLineProgram.iml" filepath="$PROJECT_DIR$/CommandLineProgram/CommandLineProgram.iml" />
+      <module fileurl="file://$PROJECT_DIR$/TextCommands/TextCommands.iml" filepath="$PROJECT_DIR$/TextCommands/TextCommands.iml" />
+      <module fileurl="file://$PROJECT_DIR$/UniverseTradeLib/UniverseTradeLib.iml" filepath="$PROJECT_DIR$/UniverseTradeLib/UniverseTradeLib.iml" />
       <module fileurl="file://$PROJECT_DIR$/UniverseTradeSim.iml" filepath="$PROJECT_DIR$/UniverseTradeSim.iml" />
     </modules>
   </component>

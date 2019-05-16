@@ -6,10 +6,15 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="UniverseTradeSim" />
+        <module name="UniverseTradeLib" />
+        <module name="CommandLineProgram" />
+        <module name="TextCommands" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="CommandLineProgram" target="1.5" />
+      <module name="TextCommands" target="1.5" />
+      <module name="UniverseTradeLib" target="1.5" />
       <module name="UniverseTradeSim" target="1.5" />
     </bytecodeTargetLevel>
   </component>
