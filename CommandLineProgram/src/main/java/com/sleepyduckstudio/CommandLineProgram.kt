@@ -2,33 +2,36 @@ package com.sleepyduckstudio
 
 import com.google.gson.GsonBuilder
 import com.sleepyduckstudio.commandline.CommandParser
-import com.sleepyduckstudio.controller.Registry
-import com.sleepyduckstudio.controller.runBusinessStep
-import com.sleepyduckstudio.controller.runProductionStep
-import com.sleepyduckstudio.controller.runTradeStep
+import com.sleepyduckstudio.commandline.CommandParser.CommandParserListener
+import com.sleepyduckstudio.commandline.CommandType
+import com.sleepyduckstudio.controller.*
 import com.sleepyduckstudio.model.Station
+import kotlin.system.exitProcess
 
 fun main() {
     val commandLineProgram = CommandLineProgram()
-
     while (true) {
-        val commandText = readCommand()
-        commandLineProgram.executeCommand(commandText)
+        val command = readLine()
+        commandLineProgram.execute(command ?: "")
     }
 }
 
-fun readCommand(text: String = ": "): String {
-    print(text)
-    return readLine() ?: ""
-}
-
-class CommandLineProgram : CommandParser() {
+class CommandLineProgram : CommandParserListener {
+    private val commandParser = CommandParser(this)
     private var running = false
     private val gson = GsonBuilder().setPrettyPrinting().create()
     private val registry = RegistryDataStore()
 
     init {
         Registry.setImplementation(registry)
+    }
+
+    fun execute(command: String) = commandParser.executeCommand(command)
+
+    override fun onError(message: String) = println(message)
+
+    override fun unknownCommand() {
+        println("Unknown command")
     }
 
     override fun start() {
@@ -57,14 +60,52 @@ class CommandLineProgram : CommandParser() {
         }
     }
 
+    override fun exit() {
+        exitProcess(0)
+    }
+
+    override fun help() {
+        CommandType.values().forEach { println(it.exampleCommand) }
+    }
+
     override fun init() {
         setupExampleWorld(registry)
         println("World initialized, only do this once!")
     }
 
+    override fun listCommodities() {
+        println("Commodities:")
+        println(gson.toJson(registry.commodities()))
+    }
+
+    override fun listEntities() {
+        println("Entities:")
+        println(gson.toJson(registry.entities()))
+    }
+
+    override fun listBusinesses() {
+        println("Businesses:")
+        println(gson.toJson(registry.businesses()))
+    }
+
+    override fun listProducers() {
+        println("Producers:")
+        println(gson.toJson(registry.productionUnits()))
+    }
+
     override fun listStations() {
         println("Stations:")
         println(gson.toJson(registry.stations()))
+    }
+
+    override fun listStockpile() {
+        println("Stockpiles:")
+        println(gson.toJson(registry.stockpile()))
+    }
+
+    override fun listActiveTrades() {
+        println("Active trades:")
+        println(gson.toJson(registry.trades(isActive())))
     }
 
     override fun addStation(station: Station) {

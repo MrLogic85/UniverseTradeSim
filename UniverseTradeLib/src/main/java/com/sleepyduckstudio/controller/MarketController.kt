@@ -30,11 +30,11 @@ private fun trade(
     sellCommodityId: String,
     buyCommodityId: String
 ) {
-    val selling = trades.filter(isSelling(sellCommodityId), isBuying(buyCommodityId))
+    val selling = trades.matches(isSelling(sellCommodityId), isBuying(buyCommodityId))
         .sortedBy { it.price }
         .toMutableList()
 
-    val buying = trades.filter(isSelling(buyCommodityId), isBuying(sellCommodityId))
+    val buying = trades.matches(isSelling(buyCommodityId), isBuying(sellCommodityId))
         .sortedByDescending { it.price }
         .toMutableList()
 

@@ -12,7 +12,6 @@ data class Commodity(
 
 data class Entity(
     val id: String = UUID.randomUUID().toString(),
-    val currencyId: String,
     val stationId: String
 ) : RegistryObject()
 

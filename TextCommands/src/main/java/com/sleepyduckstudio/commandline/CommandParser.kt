@@ -2,7 +2,6 @@ package com.sleepyduckstudio.commandline
 
 import com.sleepyduckstudio.commandline.CommandType.*
 import com.sleepyduckstudio.model.Station
-import kotlin.system.exitProcess
 
 enum class CommandType(val text: String, val exampleCommand: String = text) {
     COMMAND_EXIT("exit"),
@@ -10,51 +9,61 @@ enum class CommandType(val text: String, val exampleCommand: String = text) {
     COMMAND_INIT("init", "init (initialize example world)"),
     COMMAND_START("start"),
     COMMAND_PAUSE("pause"),
-    COMMAND_LIST_STATIONS("list stations"),
     COMMAND_LIST_COMMODITIES("list commodities"),
+    COMMAND_LIST_ENTITIES("list entities"),
+    COMMAND_LIST_BUSINESS("list businesses"),
+    COMMAND_LIST_PRODUCTION_UNITS("list producers"),
+    COMMAND_LIST_STATIONS("list stations"),
+    COMMAND_LIST_STOCKS("list stockpile"),
+    COMMAND_LIST_OPEN_TRADES("list active trades"),
     COMMAND_ADD("add", """add [station] --name "name"""")
 }
 
 private infix fun String.isCommand(command: CommandType) = startsWith(command.text, ignoreCase = true)
 private val UUIDMatcher = """[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}""".toRegex()
 
-abstract class CommandParser {
+class CommandParser(val listener: CommandParserListener) {
+
+    interface CommandParserListener {
+        fun onError(message: String)
+        fun unknownCommand()
+        fun start()
+        fun pause()
+        fun exit()
+        fun help()
+        fun init()
+        fun listCommodities()
+        fun listEntities()
+        fun listBusinesses()
+        fun listProducers()
+        fun listStations()
+        fun listStockpile()
+        fun listActiveTrades()
+        fun addStation(station: Station)
+    }
 
     fun executeCommand(command: String) = when {
-        command isCommand COMMAND_EXIT -> exit()
-        command isCommand COMMAND_HELP -> help()
-        command isCommand COMMAND_INIT -> init()
-        command isCommand COMMAND_START -> start()
-        command isCommand COMMAND_PAUSE -> pause()
-        command isCommand COMMAND_LIST_STATIONS -> listStations()
-        command isCommand COMMAND_LIST_COMMODITIES -> TODO()
+        command isCommand COMMAND_EXIT -> listener.exit()
+        command isCommand COMMAND_HELP -> listener.help()
+        command isCommand COMMAND_INIT -> listener.init()
+        command isCommand COMMAND_START -> listener.start()
+        command isCommand COMMAND_PAUSE -> listener.pause()
+        command isCommand COMMAND_LIST_COMMODITIES -> listener.listCommodities()
+        command isCommand COMMAND_LIST_ENTITIES -> listener.listEntities()
+        command isCommand COMMAND_LIST_BUSINESS -> listener.listBusinesses()
+        command isCommand COMMAND_LIST_PRODUCTION_UNITS -> listener.listProducers()
+        command isCommand COMMAND_LIST_STATIONS -> listener.listStations()
+        command isCommand COMMAND_LIST_STOCKS -> listener.listStockpile()
+        command isCommand COMMAND_LIST_OPEN_TRADES -> listener.listActiveTrades()
         command isCommand COMMAND_ADD -> add(command)
         else -> unknown()
     }
 
-    private fun printUsage(command: CommandType) = println("Usage: ${command.exampleCommand}")
+    private fun printUsage(command: CommandType) = listener.onError("Usage: ${command.exampleCommand}")
 
     private fun unknown() {
-        println("Unknown command")
+        listener.unknownCommand()
     }
-
-    private fun exit() {
-        exitProcess(0)
-    }
-
-    private fun help() {
-        CommandType.values().forEach { println(it.exampleCommand) }
-    }
-
-    abstract fun start()
-
-    abstract fun pause()
-
-    abstract fun init()
-
-    abstract fun listStations()
-
-    abstract fun addStation(station: Station)
 
     private fun add(command: String) {
         val secondCommand = command.split(' ', limit = 2)
@@ -71,7 +80,7 @@ abstract class CommandParser {
     private fun addStation(command: String) {
         val name = command.substringAfter("--name ", missingDelimiterValue = "").trim('"', ' ')
         if (name.isNotEmpty() && name.isNotBlank()) {
-            addStation(Station(name = name))
+            listener.addStation(Station(name = name))
         } else {
             printUsage(COMMAND_ADD)
         }

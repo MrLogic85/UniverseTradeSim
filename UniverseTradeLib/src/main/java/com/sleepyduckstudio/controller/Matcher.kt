@@ -4,7 +4,7 @@ import com.sleepyduckstudio.model.*
 
 typealias Matcher<T> = (T) -> Boolean
 
-fun <T : RegistryObject> Iterable<T>.filter(vararg matchers: Matcher<T>): List<T> =
+fun <T : RegistryObject> Iterable<T>.matches(vararg matchers: Matcher<T>): List<T> =
     matchers.fold(this) { objects, matcher ->
         objects.filter(matcher)
     }.toList()

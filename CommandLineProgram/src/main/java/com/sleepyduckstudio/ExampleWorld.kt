@@ -13,7 +13,6 @@ fun setupExampleWorld(registry: Registry) {
     registry.addAll(station1, credits, water)
 
     Entity(
-        currencyId = credits.id,
         stationId = station1.id
     ).also { entity ->
         val creditStock = Stock(
@@ -40,7 +39,6 @@ fun setupExampleWorld(registry: Registry) {
     }
 
     Entity(
-        currencyId = credits.id,
         stationId = station1.id
     ).also { entity ->
         val creditStock = Stock(
